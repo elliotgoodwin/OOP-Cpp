@@ -1,0 +1,183 @@
+// OOP in C++ - Assignment 1
+// transitionLines
+// a programme that asks for user input to give the energy of atomic transition lines in Joules or eV
+// Elliot Goodwin - 9621958
+// 08/02/19
+
+// includes
+#include<iostream>
+#include<iomanip>
+#include<string>
+#include<math.h>
+
+// declare namespace
+using namespace std;
+
+// isInt
+// a function that checks for positive integers
+bool isInt(int n) {
+    if (n < 1) {return false;}
+    else {return true;}
+}
+
+// getEnergy
+// a function to compute electron transition energy in eV or J using the Bohr model
+double getEnergy(int Z, int n_i, int n_f, string unit) {
+    
+    double eV_to_J{1.6E-19};
+   
+    // Compute photon energy, Delta E = 13.6*(Z^2)*(1/n_f^2-1/n_i^2) eV
+    double deltaE = 13.6 * pow(Z, 2) * (pow(n_f, -2) - pow(n_i, -2));
+    
+    // if unit = J, convert to Joules
+    if (unit == "J" || unit == "j") {
+        deltaE = deltaE * eV_to_J;
+    }
+    
+    return deltaE;
+}
+
+
+// main programme starts here
+int main() {
+    
+    // Declare variables
+    string repeat{"y"};
+    int Z{0};
+    int n_i{0};
+    int n_f{0};
+    string unit;
+    bool bad_string{false};
+    double deltaE;
+    
+    // Loop while repeat == "true"
+    do {
+        
+        // Ask user to enter atomic number
+        cout << "Enter an atomic number:" << endl;
+        cin >> Z;
+        
+        // Check for valid input (integer in range 0 < Z < 118)
+        // isInt def lines 14-18
+        while (cin.fail() || cin.get() != '\n' || isInt(Z) == false || Z > 118) {
+
+            // check input is integer
+            if (cin.fail() || cin.get() != '\n') {
+                cin.clear();
+                cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                cout << "Error. Atomic number must be a positive integer.\n" << endl;
+                cout << "Enter atomic number:" << endl;
+                cin >> Z;
+            }
+              
+            // check input is in range 0 < Z < 118
+            if (isInt(Z) == false || Z > 118) {
+                cout << "Error. Atomic number must be an integer in the range 0 < Z < 118.\n" << endl;
+                cout << "Enter atomic number:" << endl;
+                cin >> Z;
+              }
+        }
+        
+        // Ask user to enter initial and final quantum numbers
+        do {
+            
+            cout << "\nEnter initial quantum number:" << endl;
+            cin >> n_i;
+            
+            // check for n_i > 0
+            while (cin.fail() || cin.get() != '\n' || isInt(n_i) == false) {
+                
+                if (cin.fail() || cin.get() != '\n') {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Error. Atomic number must be a positive integer.\n" << endl;
+                    cout << "Enter atomic number:" << endl;
+                    cin >> n_i;
+                }
+                
+                if (isInt(n_i) == false) {
+                    cout << "Error. Initial quantum number must be a positive integer.\n" << endl;
+                    cout << "Enter initial quantum number:" << endl;
+                    cin >> n_i;
+                }
+            }
+            
+            // Ask user to enter final quantum number
+            cout << "\nEnter final quantum number:" << endl;
+            cin >> n_f;
+            
+            // check for n_f > 0
+            while (cin.fail() || cin.get() != '\n' || isInt(n_f) == false) {
+                
+                if (cin.fail() || cin.get() != '\n') {
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                    cout << "Error. Atomic number must be a positive integer.\n" << endl;
+                    cout << "Enter atomic number:" << endl;
+                    cin >> n_f;
+                }
+    
+                if (isInt(n_f) == false) {
+                    cout << "Error. Atomic number must be a positive integer.\n" << endl;
+                    cout << "Enter atomic number:" << endl;
+                    cin >> n_f;
+                }
+            }
+            
+        // Loop while n_i < n_f
+        } while(n_i <= n_f); // completes do/while loop (line 77)
+    
+        // Ask user for unit output
+        do {
+            cout << "\nPrint ouput in Joules/eV (J/e):" << endl;
+            cin >> unit;
+            if(unit == "e" || unit == "E" || unit == "J" || unit == "j"){
+                // continue if unit is valid
+                bad_string = false;
+            }
+            else{
+                // flag units as invalid
+                bad_string = true;
+            }
+        // Loop until valid unit is input
+        } while(bad_string == true);
+        
+        // compute photon energy from Bohr formula using getEnergy (def lines 20-34)
+        deltaE = getEnergy(Z, n_i, n_f, unit);
+
+        // allow precision of float field to be set
+        cout.setf(ios::scientific, ios::floatfield);
+        
+        // Output answer to 2dp in specified units
+        // if using eV
+        if(unit == "e" || unit == "E"){
+            cout << "\nEnergy in eV:" << endl;
+            cout << "deltaE = " << setprecision(2) << deltaE << " eV." << endl;
+        }
+        
+        // if using J
+        else{
+            cout << "\nEnergy in Joules:" << endl;
+            cout << "deltaE = " << setprecision(2) << deltaE << " J." << endl;
+        }
+        
+        // Ask user if they would like to repeat programme
+        cout << "\nRepeat? (y/n)" << endl;
+        cin >> repeat;
+          
+        // loop until correct input
+        if (repeat != "y" && repeat != "Y" && repeat != "n" && repeat != "N") {
+            do {
+                cout << "Error. Please enter \"y\" or \"n\":" << endl;
+                cin >> repeat;
+            } while (repeat != "y" && repeat != "Y" && repeat != "n" && repeat != "N");
+        }
+        
+        // formatting
+        cout << " " << endl;
+        
+      } while(repeat == "y" || repeat == "Y"); // completes "repeat" loop (line 50)
+
+    return 0;
+}
+
