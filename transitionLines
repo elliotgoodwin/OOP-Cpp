@@ -9,6 +9,7 @@
 #include<iomanip>
 #include<string>
 #include<math.h>
+#include<limits>
 
 // declare namespace
 using namespace std;
