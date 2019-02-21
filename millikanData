@@ -1,0 +1,199 @@
+// OOP - Assignment 2
+// millikanData
+// a program that uses dynamic memory allocation to compute the mean, standard deviation and standard error on the mean from data read from file.
+// Elliot Goodwin - 9621958
+// 08/02/19
+
+// includes
+#include<iostream>
+#include<iomanip>
+#include<fstream>
+#include<string>
+#include<cmath>
+#include<sstream>
+
+// declare namespace
+using namespace std;
+
+
+
+//---------------------------- Function definitions ------------------------------------------
+// getMean
+// a function that computes the mean of an array of pointers to N double values
+double getMean( double *myData, int N){
+    double mean{0};
+    for (int i=0; i < N; i++) {
+        mean = mean + myData[i];
+    }
+    mean = mean/N;
+    return mean;
+}
+
+// getStdDev
+// a function that computes the standard deviation of an array of pointers to N double values
+double getStdDev( double *myData, int N){
+    
+    double mean = getMean(myData, N);
+    double std{0};
+    double *temp = new double[N];
+    
+    for (int i=0; i < N; i++) {
+        temp[i] = pow((myData[i] - mean), 2);
+        std += temp[i];
+    }
+    
+    std = pow( std/(N-1), 0.5);
+    return std;
+}
+
+// getErr
+// a function that computes the standard error on the mean of an array of pointers to N double values
+double getErr(double *myData, int N){
+    double std = getStdDev(myData, N);
+    double err = std * pow(N, -0.5);
+    return err;
+}
+
+// isDouble
+// a function that tests if the contents of a string is a double
+bool isDouble(string line){
+    double d{0};
+    istringstream ss;
+    ss.str(line);
+    if (ss >> d) { return true; }
+    else { return false; }
+}
+
+
+//--------------------------------------------------------------------------------------------
+
+
+
+
+// main program starts here
+int main() {
+    
+    // declare variables
+    int N{0};
+    double mean{0}, std{0}, err{0};
+    ifstream myFile;
+    string filename;
+    string line;
+    
+    // ask user to input file name
+    do {
+        
+        cout << "Input file name (including file extension, e.g .dat, .txt):" << endl;
+        cin >> filename;
+        // attempt to open file
+        myFile.open(filename);
+        
+        // check file is open
+        if (myFile.is_open()){
+            cout << "Succesfully opened file.\n" << endl;
+        }
+        else {
+            cout << "Error. Cannot open file." << endl;
+            cout << "Ensure that file \"" << filename << "\" exists in current working directory.\n" << endl;
+        }
+        
+    } while(myFile.is_open() == false);
+    
+    // while the end of the file hasn't been reached
+    while (!myFile.eof()) {
+        // read in line from file "myFile" and append it to string "line"
+        getline(myFile, line);
+        // if the line is not empty
+        if ( line.length() > 0 ) {
+            // if line contains a double
+            if (isDouble(line) == true) {
+                // add one to counter (number of data points in file)
+                N++;
+            }
+            // do nothing is line contains characters
+        }
+    }
+    
+    cout << "Number of data points in file = " << N << "." << endl;
+    
+    // allocate memory for array of doubles containing data from file
+    double *myData = new double[N];
+    cout << "Allocated memory for " << N << " data points.\n" << endl;
+    
+    // put entries from file in myData
+    
+    // clear end of file bit
+    myFile.clear();
+    // reset to beginning of file
+    myFile.seekg(0, ios::beg);
+    // define iterator
+    int i{0};
+    
+    // while the end of the file hasn't been reached
+    while (!myFile.eof()) {
+        // read in line from file "myFile" and append it to string "line"
+        getline(myFile, line);
+        // if the line is not empty
+        if ( line.length() > 0 ) {
+            // if the line contains a double
+            if (isDouble(line) == true) {
+                // assign current line to element of myData
+                myData[i] = stod(line);
+                // add one to counter
+                i++;
+            }
+            // if line contains characters
+            else {
+                // print error message
+                cout << "** WARNING **" << endl;
+                cout << "File contains non-double entries." << endl;
+                string exit_flag;
+        
+                // prompt user to continue
+                do {
+                    cout << "Would you like to continue? (y/n):" << endl;
+                    cin >> exit_flag;
+                } while (exit_flag != "y" && exit_flag != "n" && exit_flag != "Y" && exit_flag != "N");
+                // if user enters no
+                if (exit_flag == "n" || exit_flag == "N") {
+                    cout << "You chose to exit the program." << endl;
+                    // exit the program
+                    return 1;
+                }
+                // else, ignore non-double entries
+                else {
+                    cout << "Ignoring non-double entries." << endl;
+                    // formatting
+                    cout << "" << endl;
+                }
+            }
+        }
+    }
+    
+    // print
+    cout << "Data from \"" << filename << "\" read in successfully." << endl;
+    // close file
+    myFile.close();
+    cout << "\"" << filename << "\" closed.\n" << endl;
+    
+    // compute mean, std, err (using functions defined above)
+    mean = getMean(myData, N);
+    std  = getStdDev(myData, N);
+    err  = getErr(myData, N);
+    
+    // used fixed notation and allow precision of float field to be set
+    cout.setf(ios::fixed, ios::floatfield);
+    
+    // print out formatted values to console
+    cout << "The value of the electron charge is: " << endl;
+    cout << "e = (" << setprecision(4) << mean << " +/- " << setprecision(4) << err << ") x 10^-19 C.\n" << endl;
+    cout << "The standard deviation on the measurements is:" << endl;
+    cout << "std = " << setprecision(4) << std << "x10^-19 C." << endl;
+    
+    // free memory
+    delete[] myData;
+    cout << "\nMemory has been freed." << endl;
+    // end of program
+    return 0;
+    
+}
