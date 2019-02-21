@@ -1,0 +1,490 @@
+// OOP - Assignment 3
+// physCourses
+// A program that asks user for input (manually or from a file containing data of the form "course_code course_title") and sorts the data using vectors.
+// Elliot Goodwin - 9621958
+// 15/02/19
+
+// includes
+#include<iostream>
+#include<string>
+#include<sstream>
+#include<algorithm>
+#include<vector>
+#include<fstream>
+#include<limits>
+
+// declare namespace
+using namespace std;
+
+
+// -------------- Function definitions --------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------
+// isInt
+// a function that tests if the entire contents of a string is integer
+bool isInt(string line){
+    int integer{0};
+    istringstream ss;
+    ss.str(line);
+    
+    // get length of stringstream contents
+    ss.seekg(0, ss.end);
+    int length = int(ss.tellg());
+    ss.seekg(0, ss.beg);
+    
+    // feed contents of string stream in to variable of type integer
+    ss >> integer;
+    
+    // get length of integer in string stream
+    int integer_length = int(to_string(integer).length());
+    ss.seekg(integer_length);
+    int pos = int(ss.tellg());
+    ss.seekg(0, ss.beg);
+    
+    // check that there are no other contents in string stream
+    if(ss >> integer && pos == length) { return true; }
+    else { return false; }
+}
+
+
+// compareStr
+// returns true if second argument is greater than first
+// two separate functions written to compare sub strings before and after whitespace (ws)
+bool compareStr_after_ws(string a, string b) {
+    // find position of first ws
+    size_t a_pos_1st_space = a.find_first_of(" ");
+    // find position of characters begining after first ws
+    size_t a_pos_2nd_space = a.find_first_not_of(" ", a_pos_1st_space + 1);
+    // erase string up to end of ws
+    a.erase(0, a_pos_2nd_space);
+    
+    // as above
+    size_t b_pos_1st_space = b.find_first_of(" ");
+    size_t b_pos_2nd_space = b.find_first_not_of(" ", b_pos_1st_space + 1);
+    b.erase(0, b_pos_2nd_space);
+    
+    // compares ASCII values of strings a and b
+    return (a < b);
+}
+bool compareStr_before_ws(string a, string b) {
+    // keeps part of string before first ws
+    // for details, see compareStr_after_ws
+    size_t a_pos_1st_space = a.find_first_of(" ");
+    size_t a_pos_2nd_space = a.find_first_not_of(" ", a_pos_1st_space + 1);
+    a.erase(a_pos_2nd_space, string::npos);
+    
+    size_t b_pos_1st_space = b.find_first_of(" ");
+    size_t b_pos_2nd_space = b.find_first_not_of(" ", b_pos_1st_space + 1);
+    b.erase(b_pos_2nd_space, string::npos);
+    
+    return (a < b);
+}
+
+
+// specify_inputMethod
+// returns 1 for manual data entry
+// returns 2 for import data from file
+string specify_inputMethod() {
+    
+    // variable to hold user decision
+    int choice;
+    
+    // prompt user for manual input or import from file
+    do {
+        cout << "Select method of course name input [Press 1/2]:" << endl;
+        cout << "  [1] - Manual entry" << endl;
+        cout << "  [2] - Import from file" << endl;
+        
+        // prompt user to input 1 or 2
+        cin >> choice;
+        
+        // checl for bad input
+        if (cin.fail() || cin.get() != '\n') {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Error. Press [1/2]." << endl;
+        }
+        else if (choice != 1 && choice != 2) {
+            cout << "Error. Press [1/2]." << endl;
+        }
+        
+    } while (choice != 1 && choice != 2);
+    
+    // return a variable containing users choice
+    string input_method;
+    
+    if (choice == 1) {
+        input_method = "manual";
+    }
+    if (choice == 2) {
+        input_method = "file";
+    }
+    
+    return input_method;
+}
+
+
+// open myFile
+// a function that asks user for the name of a file to open for input
+ifstream open_myFile() {
+    
+    // declare variables
+    string filename;
+    ifstream myFile;
+    
+    do {
+        
+        // ask user to input file name
+        cout << "Input file name (e.g courselist.dat):" << endl;
+        cin >> filename;
+        // attempt to open file
+        myFile.open(filename);
+        
+        // check file is open
+        if (myFile.is_open()){
+            cout << "Succesfully opened file." << endl;
+        }
+        // if file not open, print error message
+        else {
+            cout << "Error. Cannot open file." << endl;
+            cout << "Ensure that file \"" << filename << "\" exists in current working directory.\n" << endl;
+        }
+        
+        // loop while unable to open file
+    } while (myFile.is_open() == false);
+    
+    return myFile;
+    
+}
+
+
+// put_Data_inVector()
+// fills a vector with string inputs
+vector<string> put_manualData_in_Vector() {
+    
+    // declare variables
+    const string degreeCode{"PHYS"};
+    vector<string> courseTitle;
+    string line, s, courseName, courseCode;
+    stringstream ss;
+    
+    // tell user their selected method
+    cout << "You have opted to enter data manually." << endl;
+        
+    // prompt user to enter course information
+    cout << "\nEnter information in following format:" << endl;
+    cout << "Course code (e.g 10101) (space) course name (e.g Dynamics)" << endl;
+    cout << "To finish, press [q]." << endl;
+        
+    // declare a flag for continuing data entry
+    bool not_finished{ true };
+    
+    do {
+        
+        // user input
+        getline(cin, line);
+        ss.str(line);
+        
+        if (line == "q" || line == "Q") { not_finished = false; }
+        
+        // if not_finished
+        if (not_finished == true) {
+
+            // put contents of "line" before first ws in to string courseCode
+            ss >> courseCode;
+            
+            // check that courseCode is integer of length 5
+            if (!isInt(courseCode) || courseCode.length() != 5) {
+                // if courseCode not integer prompt user for proper input
+                cout << "\nError. Course code must be a 5 digit integer." << endl;
+                ss.clear();
+                do {
+                
+                    getline(cin, line);
+                    ss.str(line);
+                    // if user opts to quit, break from loop
+                    if (line == "q" || line == "Q") { break; }
+                    else { ss >> courseCode; }
+                    
+                } while (!isInt(courseCode) || courseCode.length() != 5);
+            }
+            
+            // if user opts to quit, break from loop
+            if (line == "Q" || line =="q") { break; }
+            
+            // skip ws
+            while (ss.peek() == ' ') {
+                ss.get();
+            }
+            
+            // put contents of "line" after first ws in to string courseName
+            getline(ss, courseName);
+            
+            // check that courseName is not empty
+            while(courseName.empty()) {
+                ss.clear();
+                cout << "\nError. Enter course name:" << endl;
+                getline(cin, line);
+                ss.str(line);
+                ss >> courseName;
+                
+                if (!courseName.empty()) {
+                    cout << "\nContinuing data entry:" << endl;
+                }
+            }
+        
+            // combine string and append to vector courseTitle
+            s = degreeCode + courseCode + " " + courseName;
+            courseTitle.push_back(s);
+            
+            // explicity clear variables for next loop
+            ss.clear();
+            line.clear();
+            s.clear();
+            courseCode.clear();
+            courseName.clear();
+        }
+        // if finished
+        else {
+            cout << "Data entry completed." << endl;
+        }
+    
+    } while (not_finished);
+
+    return courseTitle;
+}
+
+
+vector<string> put_fileData_in_Vector() {
+    
+    // declare variables
+    const string degreeCode{"PHYS"};
+    vector<string> courseTitle;
+    string line, s, courseCode, courseName;
+    istringstream ss;
+    
+    // tell user their selected method
+    cout << "\nYou have opted to import data from file." << endl;
+    
+    // open myFile for reading
+    ifstream myFile = open_myFile();
+        
+    // append data from file to vectors
+    // while not at the end of file
+    while (!myFile.eof()){
+        
+        // get lines from myFile and append them to string "line"
+        getline(myFile, line);
+        ss.str(line);
+        
+        // put contents of "line" before first ws in to string courseCode
+        ss >> courseCode;
+        // if courseCode is integer of length 5
+        if (isInt(courseCode) || courseCode.length() == 5) {
+            // skip ws
+            while (ss.peek() == ' ')
+                ss.get();
+            // put contents of "line" after first ws in to string courseName
+            getline(ss, courseName);
+            
+            // combine string and append to vector courseTitle
+            s = degreeCode + courseCode + " " + courseName;
+            courseTitle.push_back(s);
+            
+            // explicity clear s, ss and line
+            ss.clear();
+            line.clear();
+            s.clear();
+        }
+    }
+    
+    return courseTitle;
+}
+
+
+
+// printVector
+// a function that uses an iterator to print out the entries of a vector of strings
+void printVector(vector<string> myVector){
+    if (!myVector.empty()) {
+        for (vector<string>::iterator it = myVector.begin(); it != myVector.end(); it++) {
+            cout << *it << endl;
+        }
+    }
+}
+
+
+// get_courseYear
+// a function that returns a vector of strings with the course titles for the specified year
+vector<string> get_courseYear(vector<string> courseTitle, int yearChoice, const string degreeCode) {
+    
+    // declare variables
+    string courseYear;
+    string entry;
+    vector<string> temp;
+    
+    do {
+        // retrieve the last entry of courseTitle
+        entry = courseTitle.back();
+        // erase degree code and everything after the first digit to obtain year code
+        courseYear = entry;
+        courseYear = courseYear.erase(0, degreeCode.length());
+        courseYear = courseYear.erase(1, string::npos);
+        
+        // if yearChoice == courseYear
+        if (yearChoice == stoi(courseYear)) {
+            // add the entry to a temporary vector
+            temp.push_back(entry);
+            
+        }
+        // only comes here if above if statement is false
+        // if yearChoice == 5 then add all entries to temporary vector
+        else if (yearChoice == 5) {
+            temp.push_back(entry);
+        }
+        
+        // delete the last entry of courseTitle (required for do loop to iterate over all entries)
+        courseTitle.pop_back();
+    } while (!courseTitle.empty());
+    
+    // add entries of temporary vector to courseTitle
+    courseTitle = temp;
+    // and reverse order (since we filled temp with entries from the back of courseTitle
+    reverse(courseTitle.begin(), courseTitle.end());
+    
+    return courseTitle;
+}
+                
+
+
+
+
+// -------------- Main program ----------------------------------------------------------------------------------------------
+// --------------------------------------------------------------------------------------------------------------------------
+int main() {
+    
+    const string degreeCode{"PHYS"};
+    
+    
+    // prompt user to select data input method
+    // Return values:
+    // input_method == "manual"  -->  manual input
+    // input_method == "file"    -->  input from file
+    string input_method = specify_inputMethod();
+    
+    // initialise vector of strings "courseTitle"
+    vector<string> courseTitle;
+    
+    // specify the data to be put in vector "courseTitle"
+    // if manual entry, enter data in format "Course code (space) Course title"
+    if (input_method == "manual") {
+        courseTitle = put_manualData_in_Vector();
+    }
+    // if input from file, enter full file name (including file extension)
+    if (input_method == "file") {
+        courseTitle = put_fileData_in_Vector();
+    }
+    
+    cout << "List of courses:" << endl;
+    printVector(courseTitle);
+    
+    
+
+    
+    
+    
+    // ask user for sort options
+    int yearChoice;
+    int sortOption;
+
+    // ask user for a year
+    do {
+        
+        cout << "\nShow modules for which years: " << endl;
+        cout << "  [1] - Year 1" << endl;
+        cout << "  [2] - Year 2" << endl;
+        cout << "  [3] - Year 3" << endl;
+        cout << "  [4] - Year 4" << endl;
+        cout << "  [5] - All years" << endl;
+        cin >> yearChoice;
+        
+        // catch bad input
+        if (cin.fail() || cin.get() != '\n') {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Error. Enter year:" << endl;
+            cout << "  [1] - Year 1" << endl;
+            cout << "  [2] - Year 2" << endl;
+            cout << "  [3] - Year 3" << endl;
+            cout << "  [4] - Year 4" << endl;
+            cout << "  [5] - All years" << endl;
+            cin >> yearChoice;
+        }
+        else if (yearChoice != 1 && yearChoice != 2 && yearChoice != 3 && yearChoice != 4 && yearChoice != 5) {
+            cout << "Error. Enter year:" << endl;
+            cout << "  [1] - Year 1" << endl;
+            cout << "  [2] - Year 2" << endl;
+            cout << "  [3] - Year 3" << endl;
+            cout << "  [4] - Year 4" << endl;
+            cout << "  [5] - All years" << endl;
+            cin >> yearChoice;
+        }
+        
+    } while (yearChoice != 1 && yearChoice != 2 && yearChoice != 3 && yearChoice != 4 && yearChoice != 5);
+    
+    
+    // ask user how they want to sort courses
+    do {
+        
+        cout << "\nSort modules by:" << endl;
+        cout << "  [1] - Code" << endl;
+        cout << "  [2] - Name" << endl;
+        cin >> sortOption;
+        
+        // catch bad input
+        if (cin.fail() || cin.get() != '\n') {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Error. Enter [1]/[2]:" << endl;
+            cout << "  [1] - Code" << endl;
+            cout << "  [2] - Name" << endl;
+            cin >> sortOption;
+        }
+        else if (sortOption != 1 && sortOption != 2) {
+            cout << "Error. Enter [1]/[2]:" << endl;
+            cout << "  [1] - Code" << endl;
+            cout << "  [2] - Name" << endl;
+            cin >> sortOption;
+        }
+        
+    } while (sortOption != 1 && sortOption != 2);
+    
+    
+    
+    
+    // select courses of chosen year
+    courseTitle = get_courseYear(courseTitle, yearChoice, degreeCode);
+    
+    // sort by course code
+    if (sortOption == 1) {
+        // if vector "courseTitle" is not empty
+        if (!courseTitle.empty()) {
+            // sort entries of courseTitle before white space
+            sort(courseTitle.begin(), courseTitle.end(), compareStr_before_ws);
+            cout << "\nList of courses for year " << yearChoice << " sorted by course code:" << endl;
+        }
+    }
+    // sort by course name
+    if (sortOption == 2) {
+        // if vector "courseTitle" is not empty
+        if (!courseTitle.empty()) {
+            // sort entries of courseTitle after white space
+            sort(courseTitle.begin(), courseTitle.end(), compareStr_after_ws);
+            cout << "\nList of courses for year " << yearChoice << " sorted by name:" << endl;
+        }
+    }
+    
+    // print out sorted course titles
+    printVector(courseTitle);
+    
+    return 0;
+}
