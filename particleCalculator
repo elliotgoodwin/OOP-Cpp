@@ -1,0 +1,530 @@
+// particleCalculator
+// A program that uses a base class Vector to store information about n dimensional vectors and derived classes Vector4 and Particle to handle special instances of Vectors.
+// The classes compute 3-vector and 4-vector dot products and Lorentz boosts.
+// OOP - Assignment 7
+// Elliot Goodwin
+// 21/03/2019
+
+// includes
+#include <iostream>
+#include <cmath>
+
+// declare namespace
+using namespace std;
+
+
+// ---------------- Class variables ---------------------------------------------
+// ------------------------------------------------------------------------------
+/*  n.b natural units (c=hbar=1) used throughout
+
+double *vdata = array of pointers to vector elements of type double
+int N = dimension of vector
+double t = time-like components of vector
+double {x, y, z} = space-like components of vector
+Vector r = Euclidean space vector
+Vector beta = velocity vector
+double m = mass
+double {vx, vy, vz} = components of velocity vector, beta    */
+// ------------------------------------------------------------------------------
+
+
+
+
+
+
+// ---------------- Class definitions -------------------------------------------
+// ------------------------------------------------------------------------------
+// define a class "Vector" that can construct, add, subtract and take the dot product of N-dimensional Vectors
+class Vector
+{
+	// Friends
+	friend ostream & operator<<(ostream &os, const Vector &v);
+
+	// Protected members of class (derived classes can access)
+protected:
+	double *vdata; // pointer to Vector elements
+	int N;         // Vector dimension
+
+	// public members of class
+public:
+
+	Vector() : N(0), vdata(0) {};                    // Default constructor
+	Vector(const int n);	                         // Parameterized constructor
+	Vector(const double x, const double y, const double z);   // 3Vector constructor
+	Vector(Vector&);                                 // Copy constructor
+	Vector(Vector&&);                                // Move constructor
+	~Vector();                                       // Destructor
+
+	// Access functions
+	int getDimension() const { return N; }    // Return dimension of Vector
+	double & operator[](int i) const;         // Return ith element
+	void setElement(int i, double x) const;   // Set ith element
+
+	// Other functions
+	Vector& operator= (Vector&);                  // Copy Assignment operator
+	Vector& operator= (Vector&&);                 // Move Assignment operator
+	Vector operator+ (const Vector &v) const;     // Addition
+	Vector operator+ (const double scalar) const;
+	Vector operator- (const Vector &v) const;     // Subtraction
+	Vector operator- (const double scalar) const;
+	Vector operator* (const double scalar) const; // Vector*scalar multiplication
+	double Dot(const Vector &v) const;            // Dot product (check Vectors are same length)
+	bool isEmpty();                               // Bool to check for empty Vector
+};
+
+
+// define a derived class "Vector4" from the base class "Vector", that can compute the 4-Vector dot product and Lorentz boots to Vector4 Vectors
+class Vector4 : public Vector
+{
+	// Friends
+	// Override insertion operator for derived class Vector4
+	friend ostream & operator<<(ostream &os, Vector4 &v)
+	{
+		if (v.vdata == 0) { os << "Empty Vector."; }
+		else {
+			// loop over N elements
+			os << "(";
+			for (int i = 0; i < v.N - 1; i++) {
+				os << v.vdata[i] << ", ";
+			}
+			os << v.vdata[v.N - 1] << ")";
+		}
+		return os;
+	}
+
+public:
+	Vector4() : Vector(4) {};     // Default constructor
+
+	// Parameterised constructors
+	Vector4(double t, Vector r) : Vector(4)
+	{
+		cout << "Vector4 parameterised constructor called." << endl;
+		if (r.getDimension() == 3){
+			vdata[0] = t; vdata[1] = r[0]; vdata[2] = r[1]; vdata[3] = r[2];
+		}
+		else { cout << "Oops" << endl; }
+	} 
+	Vector4(double t, double x, double y, double z) : Vector(4)
+	{
+		//cout << "Vector4 parameterised constructor called." << endl;
+		vdata[0] = t; vdata[1] = x; vdata[2] = y; vdata[3] = z;
+	}
+
+	Vector4(Vector4 &vec4) : Vector(vec4) {}     // Copy constructor
+
+	Vector4 & operator=(Vector4 &vec4) {         // Copy assignment operator
+		Vector::operator=(vec4);
+		return *this;
+	}
+
+	~Vector4() { /*cout << "Vector4 destructor called." << endl;*/ };  // Destructor
+
+	Vector4(Vector4 &&vec4) : Vector(move(vec4)) {}     // Move constructor
+
+	Vector4 & operator=(Vector4 &&vec4) {               // Move assignment operator
+		Vector::operator=(vec4);
+		return *this;
+	}
+
+	// Functions
+	double Dot(const Vector4 &v) const;       // Override dot product for Vector4 class
+	Vector4 Boost(const Vector &beta) const;  // Lorentz boost
+
+};
+
+
+// define a class "particle" that stores information about 4-vector position and velocity, energy and mass of a particle, in addition to computing the Lorentz factor, gamma.
+class particle : Vector
+{
+	// Friends
+	// Over-ride extraction operator
+	friend ostream & operator<<(ostream &os, const particle &p)
+	{
+		if (p.vdata == 0) { os << "No particle data."; }
+		else {
+			//os << "Particle name: " << endl;
+			os << "4-position = (" << p.vdata[0] << ", " << p.vdata[1] << ", " << p.vdata[2] << ", " << p.vdata[3] << ")" << endl;
+			os << "Mass = " << p.vdata[4] << " MeV" << endl;
+			os << "Velocity = (" << p.vdata[5] << ", " << p.vdata[6] << ", " << p.vdata[7] << ")";
+		}
+		return os;
+	};
+
+public:
+	particle();    // Default constructor
+
+	// Parameterised constructors
+	particle(const Vector x, const double m, const Vector beta) : Vector(8)
+	{
+		// Set position
+		vdata[0] = x[0]; vdata[1] = x[1]; vdata[2] = x[2]; vdata[3] = x[3];
+		// Set mass
+		vdata[4] = m;
+		// Set velocity
+		vdata[5] = beta[0]; vdata[6] = beta[1]; vdata[7] = beta[2];
+	};
+	//particle(const double t, const double x, const double y, const double z, const double m, const double vx, const double vy, const double vz) : Vector(8)
+	particle(const double t, const double x, const double y, const double z, const double m, const double vx, const double vy, const double vz) : Vector(8)
+	{
+		// Set position
+		vdata[0] = t; vdata[1] = x; vdata[2] = y; vdata[3] = z;
+		// Set mass
+		vdata[4] = m;
+		// Set velocity
+		vdata[5] = vx; vdata[6] = vy; vdata[7] = vz;
+	};
+	~particle() {};     // Destructor
+
+	particle(particle &par) : Vector(par) {};         // Copy constructor
+	particle(particle &&par) : Vector(move(par)){};   // Move constructor
+	particle& operator=(particle &par) {              // Copy assignment operator
+		Vector::operator=(par);
+		return *this;
+	}
+	particle& operator=(particle &&par) {             // Move assignment operator
+		Vector::operator=(par);
+		return *this;
+	}
+
+
+	// Access functions
+	// return mass of particle
+	double Mass() const { return vdata[4]; }
+	// return lorentz factor
+	double Gamma() const
+	{
+		double beta2 = vdata[7] * vdata[7] + vdata[6] * vdata[6] + vdata[5] * vdata[5];
+		return pow(1 - beta2, -0.5);
+	};
+	// return particle energy
+	double Energy() const { return vdata[4] * Gamma(); }
+	// return particle momentum
+	double Momentum() const { return sqrt(Energy()*Energy() - vdata[4] * vdata[4]); }
+	// set particle mass
+	void setMass(double mass)
+	{
+		if (mass >= 0) { vdata[4] = mass; }
+		else { cout << "Error. Mass must be => zero." << endl; }
+	}
+};
+
+
+
+// ---------------- Vector member functions -------------------------------------
+// ------------------------------------------------------------------------------
+// Parameterised contructor ( N-dimensional Vector with all elements set to 0)
+Vector::Vector(int s)
+{
+	//cout << "Vector parameterized constructor called." << endl;
+	if (s<1) {
+		cout << "Error: trying to declare an array with size < 1" << endl;
+		exit(1);
+	}
+	else {
+		N = s;
+		vdata = new double[N];
+		for (int i = 0; i < N; i++) { vdata[i] = 0; }
+	}
+}
+
+// Parameterised 3Vector constructor
+Vector::Vector(const double x, const double y, const double z)
+{
+	//cout << "Vector parameterized constructor called." << endl;
+	N = 3;
+	vdata = new double[N];
+	vdata[0] = x; vdata[1] = y; vdata[2] = z;
+}
+
+// Copy constructor for deep copying
+Vector::Vector(Vector &v)
+{
+	N = v.N;
+	if (N > 0) {
+		vdata = new double[N];
+		// Copy values into new matrix
+		for (int i = 0; i < N; i++){
+			vdata[i] = v[i];
+		}
+	}
+	else { cout << "Error. Vector must have non-zero size." << endl; }
+}
+
+// Move copy constructor
+Vector::Vector(Vector &&v) {
+	// steal the data
+	N = v.N;
+	vdata = v.vdata;
+	v.N = 0; //delete[] v.vdata; for older versions of C++
+	v.vdata = nullptr;
+}
+
+// Assignment operator for deep copying
+Vector & Vector::operator=(Vector &v)
+{
+	if (&v == this) return *this;   // if copying to self, do nothing
+	// Delete this object's array
+	delete[] vdata; N = 0;
+	// Copy dimensions of matrix to be copied
+	N = v.N;
+	if (N > 0) {
+		// Declare new matrix with same dimensions
+		vdata = new double[N];
+		// Copy values into new matrix
+		for (int i = 0; i < N; i++) {
+			// set ith element
+			vdata[i] = v[i];
+		}
+	}
+	return *this;
+}
+
+// Move assignment operator
+Vector & Vector::operator=(Vector&& v)
+{
+	// swap contents of one matrix with another
+	swap(N, v.N);
+	swap(vdata, v.vdata);
+	return *this;
+}
+
+// Destructor
+Vector::~Vector()
+{
+	//cout << "Vector destructor called." << endl;
+	delete[] vdata; N = 0;
+}
+
+// overload () operator for Vector (return ith element)
+double & Vector::operator[](int i) const
+{
+	if (i >= 0 && i < N) { return vdata[i]; } // Return ith Vector element
+	else { cout << "Error. Out of range." << endl; exit(1); } // Out of scope
+}
+
+// setElement
+// set ith element of Vector
+void Vector::setElement(int i, double x) const
+{
+	if (i >= 0 && i < N) { vdata[i] = x; }
+	else { cout << "Error. Out of range." << endl; }
+}
+
+// Overload insertion operator for Vectors
+ostream & operator<<(ostream &os, const Vector &v)
+{
+	// loop over N elements
+	os << "(";
+	// print first N-1 elements
+	for (int i = 0; i<v.N - 1; i++) {
+		os << v.vdata[i] << ", ";
+	}
+	// print last element
+	os << v[v.N - 1] << ")";
+	return os;
+}
+
+// overload addition operator for Vector addition
+Vector Vector::operator+ (const Vector &v) const
+{
+	Vector vec(N);
+	if (N == v.N) {
+		for (int i = 0; i<N; i++){
+			vec.vdata[i] = vdata[i] + v.vdata[i];
+		}
+	}
+	else{ cout << "Error. Vectors must be of same dimension." << endl; }
+	return vec;
+}
+
+// overload addition operator for Vector+scalar addition
+Vector Vector::operator+ (const double scalar) const
+{
+	Vector vec(N);
+	for (int i = 0; i<N; i++){ vec[i] = vdata[i] + scalar; }
+	return vec;
+}
+
+// overload subtraction operator for Vector subtraction
+Vector Vector::operator- (const Vector &v) const
+{
+	Vector vec(N);
+	if (N == v.N) {
+		for (int i = 0; i<N; i++){
+			vec[i] = vdata[i] - v[i];
+		}
+	}
+	else{ cout << "Error. Vectors must be of same dimension." << endl; }
+	return vec;
+}
+
+// overload subtraction operator for scalar-Vector subtraction
+Vector Vector::operator- (const double scalar) const
+{
+	Vector vec(N);
+	for (int i = 0; i<N; i++){ vec[i] = vdata[i] - scalar; }
+	return vec;
+}
+
+// overload multiplication operator for Vector*scalar multiplication
+Vector Vector::operator* (const double scalar) const
+{
+	Vector vec(N);
+	for (int i = 0; i<N; i++){ vec[i] = vdata[i] * scalar; }
+	return vec;
+}
+
+// dotProduct
+// compute dot product of two Vectors
+double Vector::Dot(const Vector &v) const
+{
+	double dot{ 0 };
+	if (N == v.N) {
+		for (int i = 0; i<N; i++){
+			dot += v[i]*vdata[i];
+		}
+	}
+	else{ cout << "Error. Vectors must be of same dimension." << endl; }
+	return dot;
+}
+
+// isEmpty
+// return true if Vector is empty
+bool Vector::isEmpty()
+{
+	if (N == 0) { return true; }
+	else { return false; }
+}
+
+
+
+// ---------------- Vector4 member functions ------------------------------------
+// ------------------------------------------------------------------------------
+// 4-Vector dot product
+double Vector4::Dot(const Vector4 &v) const{
+	double dot{ 0 };
+	if (N == v.N) {
+		dot = vdata[0] * v.vdata[0] - vdata[1] * v.vdata[1] - vdata[2] * v.vdata[2] - vdata[3] * v.vdata[3];
+	}
+	else { cout << "Error. Vectors must be of same dimension." << endl; }
+	return dot;
+}
+
+
+// Lorentz boost
+Vector4 Vector4::Boost(const Vector &beta) const
+{
+	// check magnitude of beta <=1
+	if (beta.Dot(beta) <= 1) {
+		// compute Lorentz factor
+		double gamma = pow(1 - beta.Dot(beta), -0.5);
+		// compute euclidean Vector
+		Vector r(vdata[1], vdata[2], vdata[3]);
+
+		// compute time and space boost
+		double t_ = gamma*(vdata[0] - beta.Dot(r));
+		double temp_scalar = (gamma - 1)*r.Dot(beta) / beta.Dot(beta);
+		Vector temp_Vector = beta*temp_scalar;
+		Vector r_ = r + temp_Vector;
+		// return boosted 4-Vector
+		Vector4 x_(t_, r_[0], r_[1], r_[2]);
+		return x_;
+	}
+	else { cout << "Error.  Cannot travel faster than c." << endl; exit(1); }
+}
+
+
+
+int main() {
+
+	// Initialise some 3-Vectors using the 3-Vector parameterised constructor (part of Vector class)
+	cout << "Initialise some Vectors with parameterised constructors." << endl;
+	Vector r(1, 4, 3);
+	Vector beta(0.3, 0.1, 0.2);
+
+	// Initialise a 4-Vector using the Vector4 parameterised constructors
+	Vector4 R(1, 1, 1, 1);
+	//Vector4 S(R);
+	Vector4 S(1, r);
+
+	cout << "Print contents of Vectors using overloaded << operator." << endl;
+	// Print contents of 3-Vector
+	cout << "r = " << r << endl;
+	// Print r^2 using 3-Vector dot product member function
+	cout << "r^2 = " << r.Dot(r) << endl << endl;
+
+	// Print contents of 4-Vector
+	cout << "R = " << R << endl;
+	// Print R^2 using 4-Vector dot product member function
+	cout << "R^2 = " << R.Dot(R) << endl << endl;
+
+	// Print contents of S
+	cout << "S = " << S << endl << endl;
+
+	// Example of 4-Vector assignment/copy operators
+	// Construct a 4-Vector using copy constructor
+	cout << "Copying R to x1" << endl;
+	Vector4 x1(R);
+	cout << "R =  " << R << endl;
+	cout << "x1 =  " << x1 << endl << endl;
+
+	// Change value of R to show that x1 is unchanged
+	cout << "Change value of R" << endl;
+	R.setElement(0, 9);
+	R.setElement(1, 9);
+	R.setElement(2, 9);
+	R.setElement(3, 9);
+	cout << "R =  " << R << endl;
+	cout << "x1 =  " << x1 << endl << endl;
+
+	// Construct a 4-Vector using move copy constructor
+	cout << "Moving x1 to x2" << endl;
+	Vector4 x2(move(x1));
+	cout << "x1 =  " << x1 << endl;
+	cout << "x2 =  " << x2 << endl << endl;
+
+	// Assignment operator for 4-Vectors
+	cout << "Copy x2 to x3 by assignment" << endl;
+	Vector4 x3 = x2;
+	cout << "x2 =  " << x2 << endl;
+	cout << "x3 =  " << x3 << endl << endl;
+
+	// Move assignment operator for 4-Vectors
+	cout << "Moving x3 to x4 by assignment" << endl;
+	Vector4 x4 = move(x3);
+	cout << "x3 =  " << x3 << endl;
+	cout << "x4 =  " << x4 << endl << endl;
+
+	// Example of Lorentz boosting 4-Vector
+	cout << "Example of Lorentz boosting a vector x --> x_ = Lambda(beta)*x" << endl;
+	Vector4 x_ = R.Boost(beta);
+	cout << "x_ =  " << x_ << endl << endl;
+
+
+	// Example of using particle class
+	// Construct particle Bd with parameterised constructor
+	particle Bd(0.23, 0.34, 0.239, 2.29, 3700, 0.19, 0.32, 0.27);
+
+	// Example of over-ridden << operator to print contents of particle Bd
+	cout << "Print contents of Bd with overridden << operator." << endl;
+	cout << Bd << endl << endl;
+
+	// Example of functions to compute Lorentz factor, momentum and energy of particle
+	cout << "Compute kinematics of Bd:" << endl;
+	cout << "Lorentz factor = " << Bd.Gamma() << endl;
+	cout << "Momentum = " << Bd.Momentum() << " MeV" << endl;
+	cout << "Energy = " << Bd.Energy() << " MeV" << endl << endl;
+
+	// Example of constructing particle Mu with parameterised constructor
+	particle Mu(R, 100, beta);
+
+	cout << "Print contents of Mu." << endl;
+	cout << Mu << endl << endl;
+
+	cout << "Compute kinematics of Mu:" << endl;
+	cout << "Lorentz factor = " << Mu.Gamma() << endl;
+	cout << "Momentum = " << Mu.Momentum() << " MeV" << endl;
+	cout << "Energy = " << Mu.Energy() << " MeV" << endl << endl;
+
+	return 0;
+}
