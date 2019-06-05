@@ -1,7 +1,7 @@
-// OOP - Assignment 2
 // millikanData
 // a program that uses dynamic memory allocation to compute the mean, standard deviation and standard error on the mean from data read from file.
-// Elliot Goodwin - 9621958
+// OOP - Assignment 2
+// Elliot Goodwin
 // 08/02/19
 
 // includes
