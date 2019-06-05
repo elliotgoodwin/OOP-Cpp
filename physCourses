@@ -1,7 +1,7 @@
-// OOP - Assignment 3
 // physCourses
 // A program that asks user for input (manually or from a file containing data of the form "course_code course_title") and sorts the data using vectors.
-// Elliot Goodwin - 9621958
+// OOP - Assignment 3
+// Elliot Goodwin
 // 15/02/19
 
 // includes
