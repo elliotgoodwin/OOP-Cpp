@@ -1,2 +1,2 @@
 # OOP-Cpp
-Assignments for Object-Oriented programming in C++ at the University of Manchester
+Assignments for Object-Oriented programming in C++
